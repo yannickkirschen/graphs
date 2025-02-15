@@ -1,0 +1,27 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+tab_width = 4
+indent_size = 4
+max_line_length = 120
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[{*.md,LICENSE}]
+max_line_length = 80
+trim_trailing_whitespace = false
+
+[{*.yml,*.yaml,*.json,*.js,*.ts,.prettierrc,*.html,*.css,*.scss}]
+indent_size = 2
+tab_width = 2
+
+[{*.go}]
+# Go uses tabs and gofmt emits them by default.
+indent_style = tab
+
+[{Makefile,.gitmodules}]
+# Makefiles and .gitmodules must (!) use tabs.
+indent_style = tab
