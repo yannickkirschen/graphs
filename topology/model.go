@@ -1,23 +1,25 @@
 package topology
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/yannickkirschen/graphs"
 	"github.com/yannickkirschen/graphs/inventory"
+	"gopkg.in/yaml.v3"
 )
 
 type Model struct {
-	Connections []*Connection `json:"connections" yaml:"connections"`
+	Connections []*Connection `yaml:"connections"`
 }
 
 type Connection struct {
-	inventory.Connection
-	FromPort inventory.Id
-	ToPort   inventory.Id
+	From          inventory.Id `yaml:"from"`
+	FromPort      inventory.Id `yaml:"fromPort"`
+	To            inventory.Id `yaml:"to"`
+	ToPort        inventory.Id `yaml:"toPort"`
+	Bidirectional bool         `yaml:"bidirectional"`
 }
 
 func (model *Model) ToGraph(inv *inventory.Inventory) *graphs.Graph[inventory.Id, inventory.Id] {
@@ -53,8 +55,8 @@ func (model *Model) ToTopology(inv *inventory.Inventory) *Topology {
 
 func Parse(inv *inventory.Inventory, r io.ReadCloser) (*Topology, error) {
 	var model *Model
-	if err := json.NewDecoder(r).Decode(&model); err != nil {
-		return nil, fmt.Errorf("error parsing json input: %s", err)
+	if err := yaml.NewDecoder(r).Decode(&model); err != nil {
+		return nil, fmt.Errorf("error parsing input: %s", err)
 	}
 
 	return model.ToTopology(inv), nil

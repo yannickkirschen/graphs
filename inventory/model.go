@@ -1,23 +1,24 @@
 package inventory
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Model struct {
-	Classes []*ClassModel  `json:"classes" yaml:"classes"`
-	Objects []*ObjectModel `json:"objects" yaml:"objects"`
+	Classes []*ClassModel  `yaml:"classes"`
+	Objects []*ObjectModel `yaml:"objects"`
 }
 
 type ClassModel struct {
-	Id               Id                     `json:"id" yaml:"id"`
-	Label            string                 `json:"label" yaml:"label"`
-	Ports            []*Port                `json:"ports" yaml:"ports"`
-	Connections      []*Connection          `json:"connections" yaml:"connections"`
-	PathConstruction *PathConstructionModel `json:"pathConstruction" yaml:"pathConstruction"`
+	Id               Id                     `yaml:"id"`
+	Label            string                 `yaml:"label"`
+	Ports            []*Port                `yaml:"ports"`
+	Connections      []*Connection          `yaml:"connections"`
+	PathConstruction *PathConstructionModel `yaml:"pathConstruction"`
 }
 
 func (model *ClassModel) ToClass() (*Class, error) {
@@ -46,8 +47,8 @@ func (model *ClassModel) ToClass() (*Class, error) {
 }
 
 type PathConstructionModel struct {
-	Start Id `json:"start" yaml:"start"`
-	End   Id `json:"end" yaml:"end"`
+	Start Id `yaml:"start"`
+	End   Id `yaml:"end"`
 }
 
 func (model *PathConstructionModel) ToPathConstruction(ports map[Id]*Port) (*PathConstruction, error) {
@@ -68,9 +69,9 @@ func (model *PathConstructionModel) ToPathConstruction(ports map[Id]*Port) (*Pat
 }
 
 type ObjectModel struct {
-	Id       Id     `json:"id" yaml:"id"`
-	Label    string `json:"label" yaml:"label"`
-	ClassRef Id     `json:"class" yaml:"class"`
+	Id       Id     `yaml:"id"`
+	Label    string `yaml:"label"`
+	ClassRef Id     `yaml:"class"`
 }
 
 func (model *ObjectModel) ToObject(classes map[Id]*Class) (*Object, error) {
@@ -115,8 +116,8 @@ func (model *Model) ToInventory() (*Inventory, error) {
 
 func Parse(r io.ReadCloser) (*Inventory, error) {
 	var model *Model
-	if err := json.NewDecoder(r).Decode(&model); err != nil {
-		return nil, fmt.Errorf("error parsing json input: %s", err)
+	if err := yaml.NewDecoder(r).Decode(&model); err != nil {
+		return nil, fmt.Errorf("error parsing input: %s", err)
 	}
 
 	return model.ToInventory()

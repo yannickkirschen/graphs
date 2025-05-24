@@ -19,14 +19,14 @@ func NewClass(id Id, label string) *Class {
 }
 
 type Port struct {
-	Id    Id     `json:"id" yaml:"id"`
-	Label string `json:"label" yaml:"label"`
+	Id    Id     `yaml:"id"`
+	Label string `yaml:"label"`
 }
 
 type Connection struct {
-	From          Id   `json:"from" yaml:"from"`
-	To            Id   `json:"to" yaml:"to"`
-	Bidirectional bool `json:"bidirectional" yaml:"bidirectional"`
+	From          Id   `yaml:"from"`
+	To            Id   `yaml:"to"`
+	Bidirectional bool `yaml:"bidirectional"`
 }
 
 type PathConstruction struct {
