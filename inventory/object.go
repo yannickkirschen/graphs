@@ -1,11 +1,15 @@
 package inventory
 
-import "github.com/yannickkirschen/graphs"
+import (
+	"github.com/moznion/go-optional"
+	"github.com/yannickkirschen/graphs"
+)
 
 type Object struct {
 	Id    Id
 	Label string
 	Class *Class
+	Spec  optional.Option[any]
 }
 
 func NewObject(id Id, label string) *Object {
@@ -13,6 +17,7 @@ func NewObject(id Id, label string) *Object {
 		id,
 		label,
 		nil,
+		optional.None[any](),
 	}
 }
 

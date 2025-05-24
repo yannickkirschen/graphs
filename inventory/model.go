@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/moznion/go-optional"
 	"gopkg.in/yaml.v3"
 )
 
@@ -69,24 +70,36 @@ func (model *PathConstructionModel) ToPathConstruction(ports map[Id]*Port) (*Pat
 }
 
 type ObjectModel struct {
-	Id       Id     `yaml:"id"`
-	Label    string `yaml:"label"`
-	ClassRef Id     `yaml:"class"`
+	Id       Id        `yaml:"id"`
+	Label    string    `yaml:"label"`
+	ClassRef Id        `yaml:"class"`
+	Spec     yaml.Node `yaml:"spec"`
 }
 
-func (model *ObjectModel) ToObject(classes map[Id]*Class) (*Object, error) {
+func (model *ObjectModel) ToObject(classes map[Id]*Class, specTypes SpecMap) (*Object, error) {
 	object := NewObject(model.Id, model.Label)
 
 	class, ok := classes[model.ClassRef]
 	if !ok {
 		return nil, fmt.Errorf("model parsing error: class ref %d in object %s (ID %d) not found", model.ClassRef, model.Label, model.Id)
 	}
-
 	object.Class = class
+
+	if len(specTypes) > 0 {
+		spec, err := ParseSpec(object, model.Spec, specTypes)
+		if err != nil {
+			return nil, fmt.Errorf("model parsing error: cannot parse spec of object %s: %s", model.Label, err)
+		}
+
+		if spec != nil {
+			object.Spec = optional.Some(spec)
+		}
+	}
+
 	return object, nil
 }
 
-func (model *Model) ToInventory() (*Inventory, error) {
+func (model *Model) ToInventory(specTypes SpecMap) (*Inventory, error) {
 	inv := NewInventory()
 
 	for _, classModel := range model.Classes {
@@ -103,7 +116,7 @@ func (model *Model) ToInventory() (*Inventory, error) {
 	}
 
 	for _, objectModel := range model.Objects {
-		object, err := objectModel.ToObject(inv.classes)
+		object, err := objectModel.ToObject(inv.classes, specTypes)
 		if err != nil {
 			return nil, err
 		}
@@ -115,19 +128,27 @@ func (model *Model) ToInventory() (*Inventory, error) {
 }
 
 func Parse(r io.ReadCloser) (*Inventory, error) {
+	return ParseWithSpec(r, nil)
+}
+
+func ParseWithSpec(r io.ReadCloser, specTypes SpecMap) (*Inventory, error) {
 	var model *Model
 	if err := yaml.NewDecoder(r).Decode(&model); err != nil {
 		return nil, fmt.Errorf("error parsing input: %s", err)
 	}
 
-	return model.ToInventory()
+	return model.ToInventory(specTypes)
 }
 
 func ParseFile(filename string) (*Inventory, error) {
+	return ParseFileWithSpec(filename, nil)
+}
+
+func ParseFileWithSpec(filename string, specTypes SpecMap) (*Inventory, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, fmt.Errorf("error opening %s: %s", filename, err)
 	}
 
-	return Parse(f)
+	return ParseWithSpec(f, specTypes)
 }
