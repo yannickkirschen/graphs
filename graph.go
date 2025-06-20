@@ -131,6 +131,7 @@ func (graph *Graph[O, P]) dfsFind(data *dFSData[O, P], current *Connection[O, P]
 		// This happens, when the next port belongs to the same node as the
 		// current one.
 		if current.EqualNodes() && port == current.ToPort {
+			data.CurrentPath[0].Left = optional.None[P]()                        // Clear first port
 			data.CurrentPath[len(data.CurrentPath)-1].Right = optional.None[P]() // Clear last port
 			graph.dfsHandleFound(data)
 			return
