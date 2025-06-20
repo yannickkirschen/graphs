@@ -5,15 +5,15 @@ import (
 	"github.com/yannickkirschen/graphs"
 )
 
-type Object struct {
-	Id    Id
+type Object[O, C, P comparable] struct {
+	Id    O
 	Label string
-	Class *Class
+	Class *Class[C, P]
 	Spec  optional.Option[any]
 }
 
-func NewObject(id Id, label string) *Object {
-	return &Object{
+func NewObject[O, C, P comparable](id O, label string) *Object[O, C, P] {
+	return &Object[O, C, P]{
 		id,
 		label,
 		nil,
@@ -21,8 +21,8 @@ func NewObject(id Id, label string) *Object {
 	}
 }
 
-func (object *Object) ToGraphNode() *graphs.Node[Id, Id] {
-	node := graphs.NewNode[Id, Id](object.Id)
+func (object *Object[O, C, P]) ToGraphNode() *graphs.Node[O, P] {
+	node := graphs.NewNode[O, P](object.Id)
 
 	for _, connection := range object.Class.Connections {
 		if connection.Bidirectional {

@@ -3,22 +3,30 @@ package graphs
 import (
 	"fmt"
 	"slices"
+
+	"github.com/moznion/go-optional"
 )
 
-type Graph[I, P comparable] struct {
-	nodes       map[I]*Node[I, P]
-	connections []*Connection[I, P]
+type PathSegment[O, P comparable] Triple[optional.Option[P], *Node[O, P], optional.Option[P]]
+
+func (seg *PathSegment[O, P]) String() string {
+	return fmt.Sprintf("<%v, %v, %v>", seg.Left, seg.Middle, seg.Right)
 }
 
-func NewGraph[I, P comparable]() *Graph[I, P] {
-	return &Graph[I, P]{map[I]*Node[I, P]{}, []*Connection[I, P]{}}
+type Graph[O, P comparable] struct {
+	nodes       map[O]*Node[O, P]
+	connections []*Connection[O, P]
 }
 
-func (graph *Graph[I, P]) AddNode(node *Node[I, P]) {
+func NewGraph[O, P comparable]() *Graph[O, P] {
+	return &Graph[O, P]{map[O]*Node[O, P]{}, []*Connection[O, P]{}}
+}
+
+func (graph *Graph[O, P]) AddNode(node *Node[O, P]) {
 	graph.nodes[node.id] = node
 }
 
-func (graph *Graph[I, P]) AddConnection(connection *Connection[I, P]) error {
+func (graph *Graph[O, P]) AddConnection(connection *Connection[O, P]) error {
 	if slices.Contains(graph.connections, connection) {
 		return fmt.Errorf("graph: connection %s already exists and cannot be re-added", connection)
 	}
@@ -27,11 +35,11 @@ func (graph *Graph[I, P]) AddConnection(connection *Connection[I, P]) error {
 	return nil
 }
 
-func (graph *Graph[I, P]) Connect(fromNode *Node[I, P], fromPort P, toNode *Node[I, P], toPort P) error {
+func (graph *Graph[O, P]) Connect(fromNode *Node[O, P], fromPort P, toNode *Node[O, P], toPort P) error {
 	return graph.AddConnection(NewConnection(fromNode, fromPort, toNode, toPort))
 }
 
-func (graph *Graph[I, P]) ConnectBi(fromNode *Node[I, P], fromPort P, toNode *Node[I, P], toPort P) error {
+func (graph *Graph[O, P]) ConnectBi(fromNode *Node[O, P], fromPort P, toNode *Node[O, P], toPort P) error {
 	if err := graph.AddConnection(NewConnection(fromNode, fromPort, toNode, toPort)); err != nil {
 		return err
 	}
@@ -39,7 +47,7 @@ func (graph *Graph[I, P]) ConnectBi(fromNode *Node[I, P], fromPort P, toNode *No
 	return graph.AddConnection(NewConnection(toNode, toPort, fromNode, fromPort))
 }
 
-func (graph *Graph[I, P]) ConnectRef(fromRef I, fromPort P, toRef I, toPort P) error {
+func (graph *Graph[O, P]) ConnectRef(fromRef O, fromPort P, toRef O, toPort P) error {
 	fromNode, ok := graph.nodes[fromRef]
 	if !ok {
 		return fmt.Errorf("graph: from ref %v not found and thus cannot be used for connection", fromRef)
@@ -53,7 +61,7 @@ func (graph *Graph[I, P]) ConnectRef(fromRef I, fromPort P, toRef I, toPort P) e
 	return graph.Connect(fromNode, fromPort, toNode, toPort)
 }
 
-func (graph *Graph[I, P]) ConnectRefBi(fromRef I, fromPort P, toRef I, toPort P) error {
+func (graph *Graph[O, P]) ConnectRefBi(fromRef O, fromPort P, toRef O, toPort P) error {
 	if err := graph.ConnectRef(fromRef, fromPort, toRef, toPort); err != nil {
 		return err
 	}
@@ -61,7 +69,7 @@ func (graph *Graph[I, P]) ConnectRefBi(fromRef I, fromPort P, toRef I, toPort P)
 	return graph.ConnectRef(toRef, toPort, fromRef, fromPort)
 }
 
-func (graph *Graph[I, P]) FindConnection(node *Node[I, P], port P) (*Connection[I, P], bool) {
+func (graph *Graph[O, P]) FindConnection(node *Node[O, P], port P) (*Connection[O, P], bool) {
 	for _, connection := range graph.connections {
 		if connection.FromNode.Equals(node) && connection.FromPort == port {
 			return connection, true
@@ -71,13 +79,13 @@ func (graph *Graph[I, P]) FindConnection(node *Node[I, P], port P) (*Connection[
 	return nil, false
 }
 
-func (graph *Graph[I, P]) Find(fromNode *Node[I, P], fromPort P, toNode *Node[I, P], toPort P) [][]*Triple[*P, *Node[I, P], *P] {
-	data := &dFSData[I, P]{[]*Node[I, P]{}, []*Triple[*P, *Node[I, P], *P]{}, [][]*Triple[*P, *Node[I, P], *P]{}}
-	graph.dfsFind(data, nil, NewConnection(fromNode, fromPort, toNode, toPort))
+func (graph *Graph[O, P]) Find(fromNode *Node[O, P], fromPort P, toNode *Node[O, P], toPort P) [][]*PathSegment[O, P] {
+	data := &dFSData[O, P]{[]*Node[O, P]{}, []*PathSegment[O, P]{}, [][]*PathSegment[O, P]{}}
+	graph.dfsFind(data, NewConnection(fromNode, fromPort, toNode, toPort))
 	return data.Paths
 }
 
-func (graph *Graph[I, P]) FindRef(fromRef I, fromPort P, toRef I, toPort P) ([][]*Triple[*P, *Node[I, P], *P], error) {
+func (graph *Graph[O, P]) FindRef(fromRef O, fromPort P, toRef O, toPort P) ([][]*PathSegment[O, P], error) {
 	fromNode, ok := graph.nodes[fromRef]
 	if !ok {
 		return nil, fmt.Errorf("graph: from ref %v not found and thus cannot find paths", fromRef)
@@ -91,22 +99,22 @@ func (graph *Graph[I, P]) FindRef(fromRef I, fromPort P, toRef I, toPort P) ([][
 	return graph.Find(fromNode, fromPort, toNode, toPort), nil
 }
 
-func (graph *Graph[I, P]) dfsFind(data *dFSData[I, P], _ *Connection[I, P], current *Connection[I, P]) {
+func (graph *Graph[O, P]) dfsFind(data *dFSData[O, P], current *Connection[O, P]) {
 	if slices.Contains(data.Visited, current.FromNode) {
 		return
 	}
 
-	var entry *P
+	var entry P
 	if len(data.CurrentPath)-1 >= 0 {
-		previous, ok := graph.FindConnection(data.CurrentPath[len(data.CurrentPath)-1].Middle, *data.CurrentPath[len(data.CurrentPath)-1].Right)
+		previous, ok := graph.FindConnection(data.CurrentPath[len(data.CurrentPath)-1].Middle, data.CurrentPath[len(data.CurrentPath)-1].Right.Unwrap())
 
 		if ok {
-			entry = &previous.ToPort
+			entry = previous.ToPort
 		}
 	}
 
 	data.Visited = append(data.Visited, current.FromNode)
-	data.CurrentPath = append(data.CurrentPath, NewTriple(entry, current.FromNode, &current.FromPort))
+	data.CurrentPath = append(data.CurrentPath, &PathSegment[O, P]{optional.Some(entry), current.FromNode, optional.Some(current.FromPort)})
 
 	if current.IsSelf() {
 		graph.dfsHandleFound(data)
@@ -123,14 +131,13 @@ func (graph *Graph[I, P]) dfsFind(data *dFSData[I, P], _ *Connection[I, P], curr
 		// This happens, when the next port belongs to the same node as the
 		// current one.
 		if current.EqualNodes() && port == current.ToPort {
-			data.CurrentPath[len(data.CurrentPath)-1].Right = nil // Clear last port
+			data.CurrentPath[len(data.CurrentPath)-1].Right = optional.None[P]() // Clear last port
 			graph.dfsHandleFound(data)
 			return
 		}
 
-		prev := NewConnection(current.FromNode, current.FromPort, next.FromNode, next.ToPort)
 		new := NewConnection(next.ToNode, port, current.ToNode, current.ToPort)
-		graph.dfsFind(data, prev, new)
+		graph.dfsFind(data, new)
 	}
 
 	data.CurrentPath = data.CurrentPath[:len(data.CurrentPath)-1]
@@ -139,8 +146,8 @@ func (graph *Graph[I, P]) dfsFind(data *dFSData[I, P], _ *Connection[I, P], curr
 	data.Visited = slices.Delete(data.Visited, idx, idx+1)
 }
 
-func (graph *Graph[I, P]) dfsHandleFound(data *dFSData[I, P]) {
-	var currentPath []*Triple[*P, *Node[I, P], *P]
+func (graph *Graph[O, P]) dfsHandleFound(data *dFSData[O, P]) {
+	var currentPath []*PathSegment[O, P]
 	currentPath = append(currentPath, data.CurrentPath...)
 
 	data.Paths = append(data.Paths, currentPath)
@@ -148,8 +155,8 @@ func (graph *Graph[I, P]) dfsHandleFound(data *dFSData[I, P]) {
 	data.CurrentPath = data.CurrentPath[:len(data.CurrentPath)-1]
 }
 
-type dFSData[I comparable, P comparable] struct {
-	Visited     []*Node[I, P]
-	CurrentPath []*Triple[*P, *Node[I, P], *P]
-	Paths       [][]*Triple[*P, *Node[I, P], *P]
+type dFSData[O comparable, P comparable] struct {
+	Visited     []*Node[O, P]
+	CurrentPath []*PathSegment[O, P]
+	Paths       [][]*PathSegment[O, P]
 }

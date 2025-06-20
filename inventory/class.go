@@ -1,35 +1,35 @@
 package inventory
 
-type Class struct {
-	Id               Id
+type Class[C, P comparable] struct {
+	Id               C
 	Label            string
-	Ports            map[Id]*Port
-	Connections      []*Connection
-	PathConstruction *PathConstruction
+	Ports            map[P]*Port[P]
+	Connections      []*Connection[P]
+	PathConstruction *PathConstruction[P]
 }
 
-func NewClass(id Id, label string) *Class {
-	return &Class{
+func NewClass[C, P comparable](id C, label string) *Class[C, P] {
+	return &Class[C, P]{
 		id,
 		label,
-		map[Id]*Port{},
-		[]*Connection{},
+		map[P]*Port[P]{},
+		[]*Connection[P]{},
 		nil,
 	}
 }
 
-type Port struct {
-	Id    Id     `yaml:"id"`
+type Port[P comparable] struct {
+	Id    P      `yaml:"id"`
 	Label string `yaml:"label"`
 }
 
-type Connection struct {
-	From          Id   `yaml:"from"`
-	To            Id   `yaml:"to"`
+type Connection[P comparable] struct {
+	From          P    `yaml:"from"`
+	To            P    `yaml:"to"`
 	Bidirectional bool `yaml:"bidirectional"`
 }
 
-type PathConstruction struct {
-	Start *Port
-	End   *Port
+type PathConstruction[P comparable] struct {
+	Start *Port[P]
+	End   *Port[P]
 }

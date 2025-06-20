@@ -9,7 +9,7 @@ import (
 
 type SpecMap map[string]reflect.Type
 
-func ParseSpec(o *Object, node yaml.Node, specTypes SpecMap) (any, error) {
+func ParseSpec[O, C, P comparable](o *Object[O, C, P], node yaml.Node, specTypes SpecMap) (any, error) {
 	specType, ok := specTypes[o.Class.Label]
 	if !ok {
 		return nil, nil
