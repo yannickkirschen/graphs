@@ -48,27 +48,27 @@ six.ConnectBi("a", "b")
 
 ```go
 graph := graphs.NewGraph[int, string]()
-graphs.AddNode(one)
-graphs.AddNode(two)
-graphs.AddNode(three)
-graphs.AddNode(four)
-graphs.AddNode(five)
-graphs.AddNode(six)
+graph.AddNode(one)
+graph.AddNode(two)
+graph.AddNode(three)
+graph.AddNode(four)
+graph.AddNode(five)
+graph.AddNode(six)
 ```
 
 ### Define outer node connections
 
 ```go
-graphs.ConnectRefBi(1, "b", 2, "a")
-graphs.ConnectRefBi(2, "b", 3, "a")
-graphs.ConnectRefBi(2, "c", 4, "a")
-graphs.ConnectRefBi(3, "b", 5, "b")
-graphs.ConnectRefBi(4, "b", 5, "c")
-graphs.ConnectRefBi(5, "a", 6, "a")
+graph.ConnectRefBi(1, "b", 2, "a")
+graph.ConnectRefBi(2, "b", 3, "a")
+graph.ConnectRefBi(2, "c", 4, "a")
+graph.ConnectRefBi(3, "b", 5, "b")
+graph.ConnectRefBi(4, "b", 5, "c")
+graph.ConnectRefBi(5, "a", 6, "a")
 ```
 
 #### Find all paths
 
 ```go
-paths := graphs.FindRef(1, "b", 4, "b")
+paths, err := graph.FindRef(1, "b", 4, "b")
 ```
